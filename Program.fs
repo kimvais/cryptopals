@@ -57,26 +57,45 @@ let calculateScore (s: seq<byte>) =
 let xorWithChar (input: seq<byte>) (x: byte) = input |> Seq.map (fun c -> c ^^^ x)
 
 
-let c3 input =
+let bytesToStr (bs: seq<byte>) =
+    bs |> Seq.map byteToStr |> String.concat ""
+
+let getBestSingleCharXor input =
     seq { 0uy .. 255uy }
     |> Seq.map (xorWithChar input)
     |> Seq.maxBy calculateScore
-    |> Seq.map byteToStr
-    |> String.concat ""
+
+
+let c3 =
+    "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736"
+    |> readHex
+    |> getBestSingleCharXor
+    |> bytesToStr
     |> printfn "%s"
+
+    0
+
+let c4 =
+    let lines = readInput 4
+
+    lines
+    |> Seq.map (readHex >> getBestSingleCharXor)
+    |> Seq.filter (fun s -> (calculateScore s) > float(Seq.length s * 3)) 
+    |> Seq.map bytesToStr
+    |> Seq.iter (printfn "%s")
 
     0
 
 let getNumber (a: seq<string>): int = a |> Seq.head |> int
 
 let selectChallenge c =
+    printfn "Solving challenge %d" c
+
     match c with
     | 1 -> c1
-    | 3 ->
-        c3
-            ("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736"
-             |> readHex)
+    | 3 -> c3
+    | 4 -> c4
     | _ -> (0)
 
 [<EntryPoint>]
-let main argv = argv |> getNumber |> selectChallenge
+let main = getNumber >> selectChallenge

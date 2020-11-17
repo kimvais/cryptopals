@@ -3,6 +3,10 @@ module Cryptopals.Utils
 open System
 
 
+let readLines filePath = System.IO.File.ReadLines(filePath)
+
+let readInput (n:int) = readLines (sprintf "data/%d.txt" n)
+
 let hexToByte (cs: char []) = Convert.ToByte(String(cs), 16)
 let byteToHex (b: byte) = b.ToString("x2")
 
