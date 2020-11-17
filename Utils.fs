@@ -75,3 +75,12 @@ let getBestSingleCharXor input =
     seq { 0uy .. 255uy }
     |> Seq.map (xorWithChar input)
     |> Seq.maxBy calculateScore
+
+let getRepeatingKey (input:string) (index:int) =
+    input.[index % input.Length] |> byte
+  
+let generateRepeatingKey input =
+    Seq.initInfinite (getRepeatingKey input)
+    
+let xor key input =
+    Seq.zip input key |> Seq.map ((fun (a, b) -> a ^^^ b) >> byteToHex) |> String.concat ""
