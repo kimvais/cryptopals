@@ -1,11 +1,14 @@
 module Cryptopals.Utils
 
 open System
+open System.IO
+open System.Security.Cryptography
 
 
-let readLines filePath = System.IO.File.ReadLines(filePath)
+let readLines filePath = File.ReadLines(filePath)
 
-let readInput (n: int) = readLines (sprintf "data/%d.txt" n)
+let readInput (n: int) =
+    readLines (__SOURCE_DIRECTORY__ + (sprintf "/data/%d.txt" n))
 
 let hexToByte (cs: char []) = Convert.ToByte(String(cs), 16)
 let byteToHex (b: byte) = b.ToString("x2")
@@ -79,9 +82,9 @@ let getBestSingleCharXor input =
     |> Seq.maxBy calculateScore
 
 let getSingleCharXorKey input =
-    seq {0uy .. 255uy}
+    seq { 0uy .. 255uy }
     |> Seq.maxBy (fun f -> xorWithChar input f |> calculateScore)
-    
+
 let getRepeatingKey (input: string) (index: int) = input.[index % input.Length] |> byte
 
 let generateRepeatingKey input = Seq.initInfinite (getRepeatingKey input)
@@ -97,9 +100,7 @@ let matchOne c =
 
 let countOnes s = s |> Seq.filter matchOne |> Seq.length
 
-let xorBytes key input =
-    Seq.zip input key
-    |> Seq.map xorTuple
+let xorBytes key input = Seq.zip input key |> Seq.map xorTuple
 
 let hamming one other =
     Seq.zip one other
@@ -108,3 +109,16 @@ let hamming one other =
 
 let bytesToHexString bs =
     bs |> Seq.map byteToHex |> String.concat ""
+
+let AESDecrypt (mode: CipherMode) (key: byte []) (ciphertext: byte []) =
+    use aes = Aes.Create()
+    aes.Mode <- mode
+    aes.Key <- key
+    let decryptor = aes.CreateDecryptor()
+    use cipherStream = new MemoryStream(ciphertext)
+
+    use decryptionStream =
+        new CryptoStream(cipherStream, decryptor, CryptoStreamMode.Read)
+
+    use plainStream = new StreamReader(decryptionStream)
+    plainStream.ReadToEnd()
