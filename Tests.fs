@@ -53,3 +53,11 @@ type Set1(output: ITestOutputHelper) =
         let other = "wokka wokka!!!" |> Seq.map byte
         let distance = hamming input other
         Assert.Equal(distance, 37)
+
+    [<Fact>]
+    let ``challenge 9`` () =
+        let input = "YELLOW SUBMARINE"B |> Seq.map byte
+        let expected = Seq.concat ["YELLOW SUBMARINE"B |> Seq.map byte; (Seq.init 4 (function _ -> 4uy))] |> bytesToHexString
+        let padded = pkcs7pad 20 input |> bytesToHexString
+        Assert.Equal(padded, expected)
+        

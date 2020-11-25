@@ -122,3 +122,11 @@ let AESDecrypt (mode: CipherMode) (key: byte []) (ciphertext: byte []) =
 
     use plainStream = new StreamReader(decryptionStream)
     plainStream.ReadToEnd()
+
+let pkcs7pad (size: int) (input: seq<byte>) =
+    let padlen = size - Seq.length input % size
+
+    let padding =
+        Seq.init padlen (fun _ -> byte padlen)
+
+    Seq.concat [ input; padding ]
