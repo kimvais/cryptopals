@@ -110,12 +110,14 @@ let hamming one other =
 let bytesToHexString bs =
     bs |> Seq.map byteToHex |> String.concat ""
 
-let AESDecrypt (mode: CipherMode) (key: byte []) (ciphertext: byte []) =
+let AESDecrypt (mode: CipherMode) (key: seq<byte>) (ciphertext: seq<byte>) =
     use aes = Aes.Create()
     aes.Mode <- mode
-    aes.Key <- key
+    aes.Key <- key |> Array.ofSeq
     let decryptor = aes.CreateDecryptor()
-    use cipherStream = new MemoryStream(ciphertext)
+
+    use cipherStream =
+        new MemoryStream(ciphertext |> Array.ofSeq)
 
     use decryptionStream =
         new CryptoStream(cipherStream, decryptor, CryptoStreamMode.Read)
@@ -123,10 +125,26 @@ let AESDecrypt (mode: CipherMode) (key: byte []) (ciphertext: byte []) =
     use plainStream = new StreamReader(decryptionStream)
     plainStream.ReadToEnd()
 
+let AESEncrypt (mode: CipherMode) (key: seq<byte>) (plaintext: seq<byte>) =
+    use aes = Aes.Create()
+    aes.Mode <- mode
+    aes.Key <- key |> Array.ofSeq
+    let encryptor = aes.CreateEncryptor()
+
+    use plainstream =
+        new MemoryStream(plaintext |> Array.ofSeq)
+
+    use encryptionStream =
+        new CryptoStream(plainstream, encryptor, CryptoStreamMode.Read)
+
+    use cipherStream = new StreamReader(encryptionStream)
+    cipherStream.ReadToEnd
+
+let AESCBCDecrypt (key: seq<byte>) (iv: seq<byte>) (ciphertext: seq<byte>) = ()
+
 let pkcs7pad (size: int) (input: seq<byte>) =
     let padlen = size - Seq.length input % size
 
-    let padding =
-        Seq.init padlen (fun _ -> byte padlen)
+    let padding = Seq.init padlen (fun _ -> byte padlen)
 
     Seq.concat [ input; padding ]
