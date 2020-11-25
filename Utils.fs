@@ -18,6 +18,8 @@ let readHex input =
 
 let base64encode input = Convert.ToBase64String(input)
 
+let base64decode input = Convert.FromBase64String(input)
+
 
 let byteToStr b = string (char (b))
 
@@ -76,11 +78,33 @@ let getBestSingleCharXor input =
     |> Seq.map (xorWithChar input)
     |> Seq.maxBy calculateScore
 
-let getRepeatingKey (input:string) (index:int) =
-    input.[index % input.Length] |> byte
-  
-let generateRepeatingKey input =
-    Seq.initInfinite (getRepeatingKey input)
+let getSingleCharXorKey input =
+    seq {0uy .. 255uy}
+    |> Seq.maxBy (fun f -> xorWithChar input f |> calculateScore)
     
-let xor key input =
-    Seq.zip input key |> Seq.map ((fun (a, b) -> a ^^^ b) >> byteToHex) |> String.concat ""
+let getRepeatingKey (input: string) (index: int) = input.[index % input.Length] |> byte
+
+let generateRepeatingKey input = Seq.initInfinite (getRepeatingKey input)
+
+let asBitStr (number: byte) = Convert.ToString(number, 2)
+
+let xorTuple (a, b) = a ^^^ b
+
+let matchOne c =
+    match c with
+    | '1' -> true
+    | _ -> false
+
+let countOnes s = s |> Seq.filter matchOne |> Seq.length
+
+let xorBytes key input =
+    Seq.zip input key
+    |> Seq.map xorTuple
+
+let hamming one other =
+    Seq.zip one other
+    |> Seq.map (xorTuple >> asBitStr >> countOnes)
+    |> Seq.sum
+
+let bytesToHexString bs =
+    bs |> Seq.map byteToHex |> String.concat ""

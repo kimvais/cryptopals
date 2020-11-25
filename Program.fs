@@ -32,6 +32,25 @@ let c4 =
 
     0
 
+let hammingTuple (a, b) = hamming a b
+
+let hammingByChunk (input:seq<byte>) n =
+    let chunks = input |> Seq.chunkBySize n
+    let len = Seq.length chunks
+    let total = chunks |> Seq.map (fun f -> f |>Seq.ofArray) |> Seq.take 4 |> Seq.pairwise |> Seq.map hammingTuple |> Seq.sum
+    float total / float n
+    
+let c6 =
+    let input = readInput 6 |> String.Concat |> base64decode
+    let keysize = seq {5..40} |> Seq.minBy (hammingByChunk input)
+    printf "Key size: %d\n" keysize
+    let keybytes = input |> Seq.chunkBySize keysize |> Seq.transpose |> Seq.map getSingleCharXorKey
+    let key = keybytes |> bytesToStr
+    printf "Key: %s\n" key 
+    let plaintext = xorBytes input (key |> generateRepeatingKey) |> bytesToStr
+    printf "Plaintest:\n%s" plaintext
+    0
+    
 let getNumber (a: seq<string>): int = a |> Seq.head |> int
 
 let selectChallenge c =
@@ -41,6 +60,7 @@ let selectChallenge c =
     | 1 -> c1
     | 3 -> c3
     | 4 -> c4
+    | 6 -> c6
     | _ -> (0)
 
 [<EntryPoint>]
