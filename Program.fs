@@ -37,7 +37,6 @@ let hammingTuple (a, b) = hamming a b
 
 let hammingByChunk (input: seq<byte>) n =
     let chunks = input |> Seq.chunkBySize n
-    let len = Seq.length chunks
 
     let total =
         chunks
@@ -54,7 +53,7 @@ let c6 () =
         readInput 6 |> String.Concat |> base64decode
 
     let keysize =
-        seq { 5 .. 40 }
+        seq { 4 .. 40 }
         |> Seq.minBy (hammingByChunk input)
 
     printf "Key size: %d\n" keysize
@@ -88,6 +87,12 @@ let c7 () =
     printf "Challenge 7 plaintext:\n%s" plaintext
     0
 
+let c8 () =
+    let lines = readInput 8 |> Seq.map readHex
+    let best = lines |> Seq.minBy (Seq.chunkBySize 16 >> Seq.groupBy id >> Seq.length) |> bytesToHexString
+    printf "%A" best
+    0
+    
 let getNumber (a: seq<string>): int = a |> Seq.head |> int
 
 let selectChallenge =
@@ -97,10 +102,11 @@ let selectChallenge =
     | 4 -> c4
     | 6 -> c6
     | 7 -> c7
+    | 8 -> c8
     | _ -> fun () -> -1
 
 [<EntryPoint>]
 let main argv =
     let number = argv |> getNumber
-    printf "--- Solving challenge %d ---" number
+    printf "--- Solving challenge %d ---\n" number
     (number |> selectChallenge) ()
