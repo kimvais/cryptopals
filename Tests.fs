@@ -4,6 +4,7 @@ open Xunit
 open Xunit.Abstractions
 
 open Cryptopals.Utils
+open Cryptopals.Crypto
 
 type Set1(output: ITestOutputHelper) =
     let write result =

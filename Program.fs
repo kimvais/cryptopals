@@ -3,6 +3,7 @@
 open System
 open System.Security.Cryptography
 open Cryptopals.Utils
+open Cryptopals.Crypto
 
 
 let c1 () =
@@ -78,12 +79,9 @@ let c7 () =
     let input =
         readInput 7 |> String.Concat |> base64decode
 
-    let key =
-        "YELLOW SUBMARINE"
-        |> Array.ofSeq
-        |> Array.map byte
+    let key = keyFromString "YELLOW SUBMARINE"
 
-    let plaintext = AESDecrypt CipherMode.ECB key input
+    let plaintext = Decrypt CipherMode.ECB key input
     printf "Challenge 7 plaintext:\n%s" plaintext
     0
 
@@ -91,6 +89,15 @@ let c8 () =
     let lines = readInput 8 |> Seq.map readHex
     let best = lines |> Seq.minBy (Seq.chunkBySize 16 >> Seq.groupBy id >> Seq.length) |> bytesToHexString
     printf "%A" best
+    0
+   
+let c10 () =
+    let input = readInput 10 |> String.Concat |> base64decode
+    printf "%d\n" <| Seq.length input
+    let key = keyFromString "YELLOW SUBMARINE"
+    let iv = Array.init 16 (fun _ -> 0uy)
+    let plaintext = AESDecryptCBC key iv input |> bytesToStr
+    printfn "%s" plaintext
     0
     
 let getNumber (a: seq<string>): int = a |> Seq.head |> int
@@ -103,6 +110,7 @@ let selectChallenge =
     | 6 -> c6
     | 7 -> c7
     | 8 -> c8
+    | 10 -> c10
     | _ -> fun () -> -1
 
 [<EntryPoint>]
