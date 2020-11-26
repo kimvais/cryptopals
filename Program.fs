@@ -96,8 +96,8 @@ let c10 () =
     printf "%d\n" <| Seq.length input
     let key = keyFromString "YELLOW SUBMARINE"
     let iv = Array.init 16 (fun _ -> 0uy)
-    // let plaintext = AESDecryptCBC key iv input |> bytesToStr
-    // printfn "%s" plaintext
+    let plaintext = decryptCBC key input iv |> bytesToStr
+    printfn "%s" plaintext
     0
     
 let getNumber (a: seq<string>): int = a |> Seq.head |> int

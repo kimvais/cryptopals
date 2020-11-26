@@ -1,6 +1,7 @@
 module Cryptopals.Crypto
 
 open System.IO
+open System.Runtime.InteropServices
 open System.Security.Cryptography
 open Cryptopals.Utils
 
@@ -13,41 +14,69 @@ let pkcs7pad (size: int) (input: seq<byte>) =
     let padding = Seq.init padlen (fun _ -> byte padlen)
 
     Seq.concat [ input; padding ]
-    
-let getEncryptor (aes:Aes) = aes.CreateEncryptor()
-let getDecryptor (aes:Aes) = aes.CreateDecryptor()
 
-let AES (key: seq<byte>) =
-    use aes = Aes.Create()
+let pkcs7unpad (input: seq<byte>) =
+    let padlen = Seq.last input |> int
+    input |> Seq.truncate (Seq.length input - padlen)
+    
+let aesAlg (key: seq<byte>) =
+    let aes = new AesCryptoServiceProvider()
     aes.Mode <- CipherMode.ECB
     aes.Key <- key |> Array.ofSeq
     aes.Padding <- PaddingMode.None
     aes
-    
-let decrypt key input =
-    use aes = AES key
-    let decryptor = aes.CreateDecryptor(aes.Key, aes.IV)
+
+let getDecryptor key =
+    use aes = aesAlg key
+    aes.CreateDecryptor()
+
+let getEncryptor key =
+    use aes = aesAlg key
+    aes.CreateEncryptor()
+
+let encrypt (block: seq<byte>) key =
+    let encryptor = getEncryptor key
     let output = Array.create BLOCKSIZE 0uy
-    decryptor.TransformBlock(input, 0, BLOCKSIZE, output, 0) |> ignore
+
+    encryptor.TransformBlock((block |> Array.ofSeq), 0, BLOCKSIZE, output, 0)
+    |> ignore
+
+    output |> Seq.ofArray
+
+let decrypt (block: seq<byte>) key =
+    let decryptor = getDecryptor key
+    let output = Array.create BLOCKSIZE 0uy
+
+    decryptor.TransformBlock((block |> Array.ofSeq), 0, BLOCKSIZE, output, 0)
+    |> ignore
+
     output |> Seq.ofArray
 
 let decryptECB key input =
-    input |> Seq.chunkBySize BLOCKSIZE |> Seq.map (decrypt key) |> Seq.concat
-    
-let AESBlock cipher key iv block =
-    let result =
-        cipher CipherMode.ECB key block
-        |> Seq.map byte
-        |> xorBytes iv
-    // printfn "%s" <| bytesToStr result
-    (result, block)
-
-let AESCBC cipher (key: seq<byte>) (iv: seq<byte>) (input: seq<byte>) =
     input
     |> Seq.chunkBySize BLOCKSIZE
-    |> Seq.map Seq.ofArray
-    |> Seq.mapFold (AESBlock cipher key) iv
-    |> fst |> Seq.concat
+    |> Seq.map (fun b -> decrypt b key)
+    |> Seq.concat
 
-let AESDecryptCBC key iv ciphertext = AESCBC key iv ciphertext
-let AESEncryptCBC key iv plaintext = AESCBC key iv (plaintext |> pkcs7pad BLOCKSIZE)
+let encryptCBC key input iv =
+    let mutable prevBlock = iv
+
+    seq {
+        for block in (pkcs7pad BLOCKSIZE input)
+                     |> Seq.chunkBySize BLOCKSIZE do
+            let xorredBlock = xorBytes prevBlock block
+            let cipherBlock = encrypt xorredBlock key
+            prevBlock <- cipherBlock
+            yield! cipherBlock
+    }
+
+let decryptCBC key input (iv:seq<byte>) =
+    let mutable prevBlock = iv
+
+    seq {
+        for block in input |> Seq.chunkBySize BLOCKSIZE do
+            let plainblock = decrypt block key
+            let plaintext = xorBytes prevBlock plainblock
+            prevBlock <- block
+            yield! plaintext
+    }

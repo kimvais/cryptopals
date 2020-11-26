@@ -62,3 +62,11 @@ type Set1(output: ITestOutputHelper) =
         let padded = pkcs7pad 20 input |> bytesToHexString
         Assert.Equal(padded, expected)
         
+    [<Fact>]
+    let ``challenge 10`` () =
+        let key = keyFromString "YELLOW SUBMARINE"
+        let iv = Seq.init BLOCKSIZE byte
+        let plaintext = "Foobar" |> Seq.map byte
+        let ciphertext = encryptCBC key plaintext iv
+        let decrypted = decryptCBC key ciphertext iv
+        Assert.Equal((plaintext |> bytesToStr), (decrypted |> pkcs7unpad |> bytesToStr))
