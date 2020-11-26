@@ -37,11 +37,11 @@ let Encrypt = AES getEncryptor
 
 let AESBlock cipher key iv block =
     let result =
-        xorBytes iv block
-        |> cipher CipherMode.ECB key
+        cipher CipherMode.ECB key block
         |> Seq.map byte
-    printfn "%s" <| bytesToStr result
-    (result, result)
+        |> xorBytes iv
+    // printfn "%s" <| bytesToStr result
+    (result, block)
 
 let AESCBC cipher (key: seq<byte>) (iv: seq<byte>) (input: seq<byte>) =
     input
