@@ -109,4 +109,11 @@ let hamming one other =
 let bytesToHexString bs =
     bs |> Seq.map byteToHex |> String.concat ""
 
-let keyFromString (s:string) = s|> Array.ofSeq |> Array.map byte
+let keyFromString (s: string) = s |> Array.ofSeq |> Array.map byte
+
+let countUniques n =
+    Seq.chunkBySize n >> Seq.distinct >> Seq.length
+
+let countBlocks n = Seq.chunkBySize n >> Seq.length
+
+let countDuplicates n s = countBlocks n s - countUniques n s

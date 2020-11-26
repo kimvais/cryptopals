@@ -1,16 +1,15 @@
 module Cryptopals.Crypto
 
-open System.IO
-open System.Runtime.InteropServices
 open System.Security.Cryptography
 open Cryptopals.Utils
+open Cryptopals.Random
 
 [<Literal>]
 let BLOCKSIZE = 16
 
+
 let pkcs7pad (size: int) (input: seq<byte>) =
     let padlen = size - Seq.length input % size
-
     let padding = Seq.init padlen (fun _ -> byte padlen)
 
     Seq.concat [ input; padding ]
@@ -18,7 +17,7 @@ let pkcs7pad (size: int) (input: seq<byte>) =
 let pkcs7unpad (input: seq<byte>) =
     let padlen = Seq.last input |> int
     input |> Seq.truncate (Seq.length input - padlen)
-    
+
 let aesAlg (key: seq<byte>) =
     let aes = new AesCryptoServiceProvider()
     aes.Mode <- CipherMode.ECB
@@ -58,6 +57,12 @@ let decryptECB key input =
     |> Seq.map (fun b -> decrypt b key)
     |> Seq.concat
 
+let encryptECB key input =
+    input
+    |> Seq.chunkBySize BLOCKSIZE
+    |> Seq.map (fun b -> encrypt b key)
+    |> Seq.concat
+
 let encryptCBC key input iv =
     let mutable prevBlock = iv
 
@@ -70,7 +75,7 @@ let encryptCBC key input iv =
             yield! cipherBlock
     }
 
-let decryptCBC key input (iv:seq<byte>) =
+let decryptCBC key input (iv: seq<byte>) =
     let mutable prevBlock = iv
 
     seq {
@@ -80,3 +85,16 @@ let decryptCBC key input (iv:seq<byte>) =
             prevBlock <- block
             yield! plaintext
     }
+
+type AESMode =
+    | CBC
+    | ECB
+
+let encryptWithRandomKey aesMode input =
+    let key = getRandBytes 16
+    let iv = getRandBytes 16
+    let plaintext = pkcs7pad BLOCKSIZE input
+
+    match aesMode with
+    | CBC -> encryptCBC key plaintext iv
+    | ECB -> encryptECB key plaintext

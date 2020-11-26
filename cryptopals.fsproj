@@ -6,6 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <Compile Include="Random.fs" />
         <Compile Include="Utils.fs" />
         <Compile Include="Crypto.fs" />
         <Compile Include="Tests.fs" />

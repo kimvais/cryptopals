@@ -87,7 +87,7 @@ let c7 () =
 
 let c8 () =
     let lines = readInput 8 |> Seq.map readHex
-    let best = lines |> Seq.minBy (Seq.chunkBySize 16 >> Seq.groupBy id >> Seq.length) |> bytesToHexString
+    let best = lines |> Seq.maxBy (countDuplicates BLOCKSIZE) |> bytesToHexString
     printf "%A" best
     0
    
