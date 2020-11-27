@@ -4,6 +4,7 @@ open System
 open System.Security.Cryptography
 open Cryptopals.Utils
 open Cryptopals.Crypto
+open Cryptopals.Random
 
 
 let c1 () =
@@ -99,6 +100,20 @@ let c10 () =
     let plaintext = decryptCBC key input iv |> bytesToStr
     printfn "%s" plaintext
     0
+   
+let c11 () =
+    let input = Seq.init 40 (fun _ -> 65uy)  // A
+    for _ in 0 .. 10 do
+        let isReallyECB = coinFlip()
+        let mode = match isReallyECB with
+            | true -> ECB
+            | false -> CBC
+        let ciphertext = encryptWithRandomKey mode input
+        let blocks = countBlocks BLOCKSIZE ciphertext
+        let uniques = countUniques BLOCKSIZE ciphertext
+        let wasDetectedECB = uniques < blocks
+        printfn "%b : %b" isReallyECB wasDetectedECB
+    0
     
 let getNumber (a: seq<string>): int = a |> Seq.head |> int
 
@@ -111,6 +126,7 @@ let selectChallenge =
     | 7 -> c7
     | 8 -> c8
     | 10 -> c10
+    | 11 -> c11
     | _ -> fun () -> -1
 
 [<EntryPoint>]

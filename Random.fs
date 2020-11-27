@@ -12,6 +12,6 @@ let getRandBytes n =
     rng.GetBytes byteArray
     byteArray |> Seq.ofArray
 
-let coinFlip =
+let coinFlip () =
     getRandBytes 1 |> (Seq.head >> int >> (>) 127)
 
