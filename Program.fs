@@ -102,17 +102,23 @@ let c10 () =
     0
    
 let c11 () =
-    let input = Seq.init 40 (fun _ -> 65uy)  // A
-    for _ in 0 .. 10 do
-        let isReallyECB = coinFlip()
-        let mode = match isReallyECB with
-            | true -> ECB
-            | false -> CBC
-        let ciphertext = encryptWithRandomKey mode input
-        let blocks = countBlocks BLOCKSIZE ciphertext
-        let uniques = countUniques BLOCKSIZE ciphertext
-        let wasDetectedECB = uniques < blocks
-        printfn "%b : %b" isReallyECB wasDetectedECB
+    for inputLen in 37 .. 43 do
+        let input = Seq.init inputLen (fun _ -> 65uy)  // A
+        seq {
+            for _ in 0 .. 10000 do
+                let prefixPad = getRandBytes (prng.Next(5, 11))
+                let suffixPad = getRandBytes (prng.Next(5, 11))
+                let paddedInput = seq {prefixPad; input; suffixPad} |> Seq.concat
+                let isReallyECB = coinFlip()
+                let mode = match isReallyECB with
+                    | true -> ECB
+                    | false -> CBC
+                let ciphertext = encryptWithRandomKey mode paddedInput
+                let blocks = countBlocks BLOCKSIZE ciphertext
+                let uniques = countUniques BLOCKSIZE ciphertext
+                let wasDetectedECB = uniques < blocks
+                yield (isReallyECB, wasDetectedECB)
+            } |> Seq.sumBy (fun (a, b) -> match a = b with | false -> 0.0 | true -> 0.01) |> (printfn "%d: %.1f %%"  inputLen)
     0
     
 let getNumber (a: seq<string>): int = a |> Seq.head |> int
