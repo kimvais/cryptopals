@@ -1,6 +1,7 @@
 ﻿module Challenges
 
 open System
+open System.Linq
 open System.Security.Cryptography
 open Cryptopals.Utils
 open Cryptopals.Crypto
@@ -58,7 +59,7 @@ let c6 () =
         seq { 4 .. 40 }
         |> Seq.minBy (hammingByChunk input)
 
-    printf "Key size: %d\n" keysize
+    printfn "Key size: %d\n" keysize
 
     let keybytes =
         input
@@ -67,13 +68,13 @@ let c6 () =
         |> Seq.map getSingleCharXorKey
 
     let key = keybytes |> bytesToStr
-    printf "Key: %s\n" key
+    printfn "Key: %s\n" key
 
     let plaintext =
         xorBytes input (key |> generateRepeatingKey)
         |> bytesToStr
 
-    printf "Plaintest:\n%s" plaintext
+    printfn "Plaintest:\n%s" plaintext
     0
 
 let c7 () =
@@ -83,7 +84,7 @@ let c7 () =
     let key = keyFromString "YELLOW SUBMARINE"
 
     let plaintext = decryptECB key input
-    printf "Challenge 7 plaintext:\n%s" (bytesToStr plaintext)
+    printfn "Challenge 7 plaintext:\n%s" (bytesToStr plaintext)
     0
 
 let c8 () =
@@ -94,14 +95,14 @@ let c8 () =
         |> Seq.maxBy (countDuplicates BLOCKSIZE)
         |> bytesToHexString
 
-    printf "%A" best
+    printfn "%A" best
     0
 
 let c10 () =
     let input =
         readInput 10 |> String.Concat |> base64decode
 
-    printf "%d\n" <| Seq.length input
+    printfn "%d\n" <| Seq.length input
     let key = keyFromString "YELLOW SUBMARINE"
     let iv = Array.init 16 (fun _ -> 0uy)
     let plaintext = decryptCBC key input iv |> bytesToStr
@@ -161,7 +162,41 @@ let c12 () =
         |> Seq.take 2
         |> Seq.reduce (fun a b -> b - a)
 
-    printf "Detected block size %d" blockSize
+    printfn "Detected block size %d" blockSize
+
+    let testDataForECB =
+        getNBytesOfZero (4 * blockSize) |> oracle
+
+    if countDuplicates blockSize testDataForECB > 1
+    then printfn "Detected ECB"
+
+    let getLeftPadWithZeroes tail =
+        let len = Seq.length tail
+        let count = blockSize - (1 + len)
+        let prefix = getNBytesOfZero count
+        Seq.concat [ prefix; tail ]
+
+    let mutable discoveredBytes = Seq.empty
+
+    let getFirstBlock s =
+        s
+        |> oracle
+        |> Seq.chunkBySize blockSize
+        |> Seq.head
+
+    for _ in [ 0 .. blockSize ] do
+        let prefix = getLeftPadWithZeroes discoveredBytes
+
+        let lookupMap =
+            [ 0uy .. 255uy ]
+            |> Seq.map (fun b -> Seq.append prefix [ b ] |> getFirstBlock |> Array.ofSeq, b)
+            |> Map.ofSeq
+
+        let cipherBlock = getFirstBlock prefix
+        let decrypted = Map.find cipherBlock lookupMap
+        discoveredBytes <- Seq.append discoveredBytes [ decrypted ]
+        printfn "%A" (bytesToStr discoveredBytes)
+
     0
 
 let getNumber (a: seq<string>): int = a |> Seq.head |> int
@@ -182,5 +217,5 @@ let selectChallenge =
 [<EntryPoint>]
 let main argv =
     let number = argv |> getNumber
-    printf "--- Solving challenge %d ---\n" number
+    printfn "--- Solving challenge %d ---" number
     (number |> selectChallenge) ()
