@@ -1,5 +1,6 @@
 module Cryptopals.Crypto
 
+open System
 open System.Security.Cryptography
 open Cryptopals.Utils
 open Cryptopals.Random
@@ -98,3 +99,8 @@ let encryptWithRandomKey aesMode input =
     match aesMode with
     | CBC -> encryptCBC key plaintext iv
     | ECB -> encryptECB key plaintext
+
+let ecbOracle secret key (s:seq<byte>) =
+    let plaintext = [s; secret] |> Seq.concat |> pkcs7pad BLOCKSIZE
+    encryptECB key plaintext
+    

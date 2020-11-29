@@ -121,6 +121,14 @@ let c11 () =
             } |> Seq.sumBy (fun (a, b) -> match a = b with | false -> 0.0 | true -> 0.01) |> (printfn "%d: %.1f %%"  inputLen)
     0
     
+let c12 () =
+    let input = readInput 12 |> String.Concat |> base64decode
+    let key = getRandBytes 16
+    let getNBytesOfZero n = Seq.init n (fun _ -> 0uy)
+    let oracle = ecbOracle input key
+    let blockSize = Seq.initInfinite (getNBytesOfZero) |> Seq.map (oracle >> Seq.length) |> Seq.distinct |> Seq.take 2 |> Seq.reduce (fun a b -> b - a)
+    0
+    
 let getNumber (a: seq<string>): int = a |> Seq.head |> int
 
 let selectChallenge =
@@ -133,6 +141,7 @@ let selectChallenge =
     | 8 -> c8
     | 10 -> c10
     | 11 -> c11
+    | 12 -> c12
     | _ -> fun () -> -1
 
 [<EntryPoint>]
