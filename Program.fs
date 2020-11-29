@@ -88,47 +88,82 @@ let c7 () =
 
 let c8 () =
     let lines = readInput 8 |> Seq.map readHex
-    let best = lines |> Seq.maxBy (countDuplicates BLOCKSIZE) |> bytesToHexString
+
+    let best =
+        lines
+        |> Seq.maxBy (countDuplicates BLOCKSIZE)
+        |> bytesToHexString
+
     printf "%A" best
     0
-   
+
 let c10 () =
-    let input = readInput 10 |> String.Concat |> base64decode
+    let input =
+        readInput 10 |> String.Concat |> base64decode
+
     printf "%d\n" <| Seq.length input
     let key = keyFromString "YELLOW SUBMARINE"
     let iv = Array.init 16 (fun _ -> 0uy)
     let plaintext = decryptCBC key input iv |> bytesToStr
     printfn "%s" plaintext
     0
-   
+
 let c11 () =
     for inputLen in 37 .. 43 do
-        let input = Seq.init inputLen (fun _ -> 65uy)  // A
+        let input = Seq.init inputLen (fun _ -> 65uy) // A
+
         seq {
             for _ in 0 .. 10000 do
                 let prefixPad = getRandBytes (prng.Next(5, 11))
                 let suffixPad = getRandBytes (prng.Next(5, 11))
-                let paddedInput = seq {prefixPad; input; suffixPad} |> Seq.concat
-                let isReallyECB = coinFlip()
-                let mode = match isReallyECB with
+
+                let paddedInput =
+                    seq {
+                        prefixPad
+                        input
+                        suffixPad
+                    }
+                    |> Seq.concat
+
+                let isReallyECB = coinFlip ()
+
+                let mode =
+                    match isReallyECB with
                     | true -> ECB
                     | false -> CBC
+
                 let ciphertext = encryptWithRandomKey mode paddedInput
                 let blocks = countBlocks BLOCKSIZE ciphertext
                 let uniques = countUniques BLOCKSIZE ciphertext
                 let wasDetectedECB = uniques < blocks
                 yield (isReallyECB, wasDetectedECB)
-            } |> Seq.sumBy (fun (a, b) -> match a = b with | false -> 0.0 | true -> 0.01) |> (printfn "%d: %.1f %%"  inputLen)
+        }
+        |> Seq.sumBy (fun (a, b) ->
+            match a = b with
+            | false -> 0.0
+            | true -> 0.01)
+        |> (printfn "%d: %.1f %%" inputLen)
+
     0
-    
+
 let c12 () =
-    let input = readInput 12 |> String.Concat |> base64decode
+    let input =
+        readInput 12 |> String.Concat |> base64decode
+
     let key = getRandBytes 16
     let getNBytesOfZero n = Seq.init n (fun _ -> 0uy)
     let oracle = ecbOracle input key
-    let blockSize = Seq.initInfinite (getNBytesOfZero) |> Seq.map (oracle >> Seq.length) |> Seq.distinct |> Seq.take 2 |> Seq.reduce (fun a b -> b - a)
+
+    let blockSize =
+        Seq.initInfinite (getNBytesOfZero)
+        |> Seq.map (oracle >> Seq.length)
+        |> Seq.distinct
+        |> Seq.take 2
+        |> Seq.reduce (fun a b -> b - a)
+
+    printf "Detected block size %d" blockSize
     0
-    
+
 let getNumber (a: seq<string>): int = a |> Seq.head |> int
 
 let selectChallenge =
