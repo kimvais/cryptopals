@@ -1,8 +1,6 @@
 ﻿module Challenges
 
 open System
-open System.Linq
-open System.Security.Cryptography
 open Cryptopals.Utils
 open Cryptopals.Crypto
 open Cryptopals.Random
@@ -55,26 +53,26 @@ let c6 () =
     let input =
         readInput 6 |> String.Concat |> base64decode
 
-    let keysize =
+    let keySize =
         seq { 4 .. 40 }
         |> Seq.minBy (hammingByChunk input)
 
-    printfn "Key size: %d\n" keysize
+    printfn "Key size: %d\n" keySize
 
-    let keybytes =
+    let keyBytes =
         input
-        |> Seq.chunkBySize keysize
+        |> Seq.chunkBySize keySize
         |> Seq.transpose
         |> Seq.map getSingleCharXorKey
 
-    let key = keybytes |> bytesToStr
+    let key = keyBytes |> bytesToStr
     printfn "Key: %s\n" key
 
     let plaintext =
         xorBytes input (key |> generateRepeatingKey)
         |> bytesToStr
 
-    printfn "Plaintest:\n%s" plaintext
+    printfn "Plaintext:\n%s" plaintext
     0
 
 let c7 () =
@@ -170,13 +168,11 @@ let c12 () =
     if countDuplicates blockSize testDataForECB > 1
     then printfn "Detected ECB"
 
-    let getLeftPadWithZeroes tail =
-        let len = Seq.length tail
-        let count = blockSize - (1 + len)
-        let prefix = getNBytesOfZero count
-        Seq.concat [ prefix; tail ]
+    let getLeftPadWithZeroes known =
+        let count = blockSize - (1 + Seq.length known)
+        let zeroes = getNBytesOfZero count
+        Seq.append zeroes known 
 
-    let mutable discoveredBytes = Seq.empty
 
     let getFirstBlock s =
         s
@@ -184,15 +180,20 @@ let c12 () =
         |> Seq.chunkBySize blockSize
         |> Seq.head
 
+    let mutable discoveredBytes = Seq.empty
     for _ in [ 0 .. blockSize ] do
         let prefix = getLeftPadWithZeroes discoveredBytes
 
         let lookupMap =
             [ 0uy .. 255uy ]
-            |> Seq.map (fun b -> Seq.append prefix [ b ] |> getFirstBlock |> Array.ofSeq, b)
+            |> Seq.map (fun b ->
+                Seq.append prefix [ b ]
+                |> getFirstBlock
+                |> Array.ofSeq,
+                b)
             |> Map.ofSeq
 
-        let cipherBlock = getFirstBlock prefix
+        let cipherBlock = getFirstBlock prefix 
         let decrypted = Map.find cipherBlock lookupMap
         discoveredBytes <- Seq.append discoveredBytes [ decrypted ]
         printfn "%A" (bytesToStr discoveredBytes)
